@@ -2,6 +2,9 @@ package com.example.demo.view
 
 import javafx.beans.property.SimpleStringProperty
 import javafx.geometry.Pos
+import javafx.scene.control.ContextMenu
+import javafx.scene.control.MenuItem
+import javafx.scene.image.Image
 import javafx.scene.layout.Priority
 import javafx.scene.paint.Color
 import javafx.scene.text.FontWeight
@@ -17,7 +20,7 @@ import java.net.URI
 /**
  * The class for storing book data in the main menu
  */
-class BookModel(name: String, author: String, path: String) {
+class BookModel(name: String, author: String, path: String, var dir: String) {
     //    private val nameProperty = SimpleStringProperty(
 //            if (name.length < 35) name else name.subSequence(0, 32).toString() + "..."
 //    )
@@ -32,7 +35,6 @@ class BookModel(name: String, author: String, path: String) {
 
     private val pathProperty = SimpleStringProperty(path)
     var path: String by pathProperty
-
 
     override fun equals(other: Any?): Boolean {
         if (other !is BookModel) return false
@@ -50,8 +52,16 @@ class BookModel(name: String, author: String, path: String) {
 /**
  * The main class for the menu window (view)
  */
-class MainView : View("ePub Reader") {
+class MainView : View("ePub Star") {
     private val books = ArrayList<BookModel>().asObservable()
+    private val cmItems = listOf(MenuItem("hello item")).asObservable()
+
+    private fun openBook(book: BookModel) {
+        books.remove(book)
+        books.add(0, book)
+
+        replaceWith(find<ReadingView>(mapOf(ReadingView::path to book.path)))
+    }
 
     override val root = hbox {
         useMaxWidth = true
@@ -70,13 +80,22 @@ class MainView : View("ePub Reader") {
                     }
                     label(it.author)
                     onDoubleClick {
-                        // Moves the book to the first position in the list
-                        books.remove(it)
-                        books.add(0, it)
-
-                        // TODO: implement book opening
-                        print(it.path)
+                        openBook(it)
                     }
+                    contextMenu = ContextMenu(
+                            MenuItem("Open").apply {
+                                action {
+                                    openBook(it)
+                                }
+                            },
+                            // TODO: Improve the "show in explorer" feature.
+                            MenuItem("Show in Explorer").apply {
+                                action {
+                                    Desktop.getDesktop().open(File(it.dir))
+                                }
+                            },
+                            MenuItem("Remove from the list").apply { action { books.remove(it) } }
+                    )
                 }
             }
         }
@@ -88,6 +107,12 @@ class MainView : View("ePub Reader") {
                 alignment = Pos.CENTER
                 useMaxWidth = true
                 hGrow = Priority.ALWAYS
+            }
+
+            imageview(url = "/png/icon_large.png"){
+                isPreserveRatio = true
+                fitWidth = 120.0
+                isSmooth = true
             }
 
             label("Welcome to $title!") {
@@ -104,16 +129,15 @@ class MainView : View("ePub Reader") {
                                     "epub", "*.epub")),
                             mode = FileChooserMode.Multi)
 
+                    val epubReader = EpubReader()
                     fileList.forEach {
                         try {
-                            val epubReader = EpubReader()
                             val book: Book = epubReader.readEpub(FileInputStream(it))
                             val titles = book.metadata.titles
                             val title = if (titles.isEmpty()) it.name else titles[0]
                             val authors = book.metadata.authors
                             val author = if (authors.isEmpty()) "Unknown" else authors[0].toString()
-                            val model = BookModel(title, author, it.absolutePath)
-
+                            val model = BookModel(title, author, it.absolutePath, it.parent)
                             books.remove(model)
                             books.add(0, model)
                         } catch (e: Exception) {
@@ -122,10 +146,6 @@ class MainView : View("ePub Reader") {
                     }
                 }
             }
-//            button("Add folder") {
-//                useMaxWidth = true
-//                // TODO: implement the folder addition or remove the button
-//            }
             button("This project on GitHub") {
                 useMaxWidth = true
                 action {
@@ -134,6 +154,10 @@ class MainView : View("ePub Reader") {
             }
 
         }
+    }
+
+    override fun onDock() {
+        primaryStage.icons += Image("/png/icon_small.png")
     }
 }
 

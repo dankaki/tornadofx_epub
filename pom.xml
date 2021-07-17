@@ -17,7 +17,7 @@
     </repositories>
 
     <properties>
-        <kotlin.version>1.4.0</kotlin.version>
+        <kotlin.version>1.5.0</kotlin.version>
         <tornadofx.version>1.7.20</tornadofx.version>
     </properties>
 
@@ -43,6 +43,13 @@
             <artifactId>epublib-core</artifactId>
             <version>3.1</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/net.lingala.zip4j/zip4j -->
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
